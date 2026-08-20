@@ -1,0 +1,132 @@
+\RequirePackage{xargs}
+\RequirePackage{xparse}
+\RequirePackage{xstring}
+\RequirePackage{hyperref}
+\RequirePackage{adjustbox}
+\RequirePackage{proof}
+\RequirePackage{pgfmath}
+\RequirePackage{tabularray}
+\RequirePackage{ltxcmds}
+\RequirePackage{expl3}
+
+\newcommand*{\InferTagFormat}[1]{(#1)} %
+\newcommand*{\InferTagStyle}[1]{\!\!\scalebox{.8}{#1}}
+\newcommand*{\InferRefStyle}[1]{\textcolor{violet}{#1}}
+\def\InferLineSkip{1mm}
+\makeatletter
+\newcommand{\writeLabel}[2]{%
+  \IfValueT{#1}{%
+    \protected@edef\@currentlabel{\InferRefStyle{#2}}%
+    \label{#1}%
+  }%
+}
+% \newcommand{\writeLabel}[2]{%
+%   \IfValueT{#1}{%
+%     \protected@write\@auxout{}{%
+%       \string\newlabel{#1}{%
+%         {\InferRefStyle{#2}}%
+%         {\noexpand\thepage}%
+%         {\InferRefStyle{#2}}%
+%         {#1}%
+%         {}%
+%       }%
+%     }%
+%   }%
+% }
+\makeatother
+
+\ExplSyntaxOn
+\NewDocumentCommand{\tagFromName}{m}{
+  \regex_extract_once:nnNTF { :([a-zA-Z0-9]+)\Z } { #1 } \l_tmpa_seq
+  { \seq_item:Nn \l_tmpa_seq 2  } { #1 }
+}
+\newcommand{\labelTag}[2]{
+    \IfValueTF{#2}
+    {\InferTagFormat{#2}}
+    {\IfValueT{#1}{\InferTagFormat{\tagFromName{#1}}}}
+}
+\ExplSyntaxOff
+
+\NewDocumentCommand{\Infer}{s o d<> m m}{%
+  \def\theTag{\labelTag{#2}{#3}}
+  \IfBooleanF#1{\writeLabel{#2}{\theTag}}%
+  \infer[\!\text{\InferTagStyle{\theTag}}]{#4}{#5}
+}
+
+\NewDocumentCommand{\InferEq}{s o d<> m m}{%
+  \def\theTag{\labelTag{#2}{#3}}
+  \IfBooleanF#1{\writeLabel{#2}{\theTag}}%
+  \infer=[\!\text{\InferTagStyle{\theTag}}]{#4}{#5}
+}
+
+
+\NewDocumentCommand{\infersitem}{m}{\ensuremath{#1}\hfill}
+\NewDocumentCommand{\infersline}{>{\SplitList{&}} m}{
+  \hfill \ProcessList {#1} { \infersitem }
+  \vspace{\InferLineSkip}\par\noindent
+}
+\NewDocumentCommand{\infersarray}{>{\SplitList{\\}} m}{
+  \par\noindent \ProcessList {#1} { \infersline }
+}
+
+\newlength{\inferswidth}
+\NewDocumentEnvironment{Infers}{O{\linewidth} O{1.0} b}
+{\pgfmathsetlength{\inferswidth}{#1/#2}%
+  \begin{adjustbox}{scale=#2,minipage=\inferswidth}\infersarray{#3}}
+ {\end{adjustbox}}
+
+\makeatletter
+\newsavebox{\@rulebox}
+\newsavebox{\@labelbox}
+\NewDocumentEnvironment{Infersc}{b}
+{ \bgroup%.
+    \RenewDocumentCommand{\Infer}{s o d<> m m}{%
+      \def\theTag{\labelTag{##2}{##3}}%
+      \sbox\@rulebox{\infer{##4}{##5}}%
+      \ifx\\##5\\%
+        \sbox\@rulebox{\ensuremath{##4}}%
+      \else%
+        \sbox\@rulebox{\ensuremath{\infer{##4}{##5}}}%
+      \fi%
+      \sbox\@labelbox{\InferTagStyle{\theTag}\writeLabel{##2}{\theTag}}%
+      \@tempdima=\linewidth%
+      \@tempdimb=\wd\@rulebox%
+      \advance\@tempdimb by \wd\@labelbox%
+      \advance\@tempdimb by 2ex%
+      %
+      \noindent%
+      \ifdim\@tempdimb > \@tempdima%
+        \par\vspace{-\InferLineSkip}\vspace{-\parskip}%
+        \hfill\usebox{\@labelbox}%
+        \par\noindent%
+        \hfill\usebox{\@rulebox}\hfill%
+      \else%
+        % \makebox[0pt][l]{\usebox{\@rulebox}}%
+        \hfill%
+        \usebox{\@rulebox}
+        \hfill%
+        \raisebox{\dimexpr\ht\@rulebox - \ht\@labelbox}{\usebox{\@labelbox}}%
+      \fi%
+      \vspace{\InferLineSkip}\par
+    }
+    #1
+}
+{\egroup}
+\newcommand{\customlabel}[2]{\protected@write \@auxout {}{\string \newlabel{#1}{{#2}{\thepage}{#2}{#1}{}} }}
+\makeatother
+
+\newcommand*{\rlname}[3]{\ifx\\#3\\#2\else\ensuremath{#3}\fi}
+\newcommand*{\rlrefstyle}[1]{\textcolor{violet}{\textsc{[#1]}}} %
+\newcommand*{\rllabelstyle}[1]{\scalebox{0.8}{{\textsc{[#1]}}}}
+
+\NewDocumentCommand{\InferEqSide}{O{}O{}O{}mmO{}}{%
+  \expandarg
+  \def\rulelbl{\rlname{#1}{#2}{#3}}
+  \begin{array}[b]{@{}l@{}}
+    \unlessempty{#1#2}{%
+    \rllabelstyle{\hypertarget{#1:#2}{\rulelbl}}%
+    \customlabel{#1:#2}{\rlrefstyle{\rulelbl}}\\}%
+    \infer=[#6]{\strut#4}{#5}
+  \end{array}
+}
+

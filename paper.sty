@@ -1,0 +1,871 @@
+% \RequirePackage{upgreek}
+% \RequirePackage{bm}
+\RequirePackage{xargs}
+\RequirePackage{xspace}
+\RequirePackage{xparse}
+\RequirePackage{xifthen}
+\RequirePackage{xfrac}
+\RequirePackage{mathtools}
+\RequirePackage{bold-extra}
+\RequirePackage[e]{esvect}
+\RequirePackage{listings}
+\RequirePackage{enumitem}
+
+
+% --- listing style for the algorithm figure ---
+\lstdefinestyle{algo}{
+  basicstyle=\small\ttfamily,
+  keywordstyle=\bfseries,
+  commentstyle=\color{gray}\itshape,
+  mathescape=true,
+  columns=fullflexible,
+  keepspaces=true,
+  morekeywords={for,to,return,sample,let,in},
+  morecomment=[l]{//},
+}
+% colors
+% --------------------------------------------------------------------
+\newbool{applycolor}
+\booltrue{applycolor}
+
+\NewDocumentCommand{\ccolor}{s m m}{
+  \ifbool{applycolor}{{\IfBooleanT#1{\boolfalse{applycolor}}\color{#2}{#3}}}{#3}
+}
+
+
+\newcommand{\pfun}{\textsf{pFun}\xspace}
+% terms
+% --------------------------------------------------------------------
+\newcommand{\substitute}[1]{\{#1\}}
+% \newcommand{\substby}[2]{#2/#1}
+\newcommand{\substby}[2]{\sfrac{#2}{#1}}
+\newcommand{\subst}[2]{\substitute{\substby{#1}{#2}}}
+% \newcommand{\substt}[4]{\substitute{\substby{#1,#3}{#2,#4}}}
+\newcommand{\substt}[4]{\substitute{\substby{#1}{#2},\substby{#3}{#4}}}
+\newcommand{\substttt}[8]{\substitute{\substby{#1}{#2},\substby{#3}{#4},\substby{#5}{#6},\substby{#7}{#8}}}
+
+% typeset
+\definecolor{cadmiumgreen}{rgb}{0.0, 0.42, 0.24}
+\definecolor{cerulean}{rgb}{0.0, 0.48, 0.65}
+\definecolor{charcoal}{rgb}{0.21, 0.27, 0.31}
+\definecolor{darkcerulean}{rgb}{0.03, 0.27, 0.49}
+\definecolor{darkpastelblue}{rgb}{0.47, 0.62, 0.8}
+\definecolor{denim}{rgb}{0.08, 0.38, 0.74}
+\definecolor{yaleblue}{rgb}{0.06, 0.3, 0.57}
+\definecolor{xanadu}{rgb}{0.45, 0.53, 0.47}
+\definecolor{ultramarineblue}{rgb}{0.25, 0.4, 0.96}
+
+\newcommand{\exprstyle}[1]{\mathtt{#1}}
+\newcommand{\formstyle}[1]{\ccolor*{darkcerulean}{#1}}
+\newcommand{\kwdstyle}[1]{\textbf{\texttt{#1}}}
+\newcommand{\ixstyle}[1]{\ccolor*{ultramarineblue}{#1}}
+\newcommand{\opstyle}[1]{\ccolor*{darkcerulean}{\mathtt{#1}}}
+\newcommand{\constrstyle}[1]{\ccolor{green!40!black}{\exprstyle{#1}}}
+
+\newcommand{\espace}{\mparbox{0cm}{}\ }
+\newcommand{\eindent}{\mparbox{0cm}{}\quad}
+
+%structure
+\newcommand{\kwd}[1]{\kwdstyle{#1}}
+\newcommand{\blockstyle}{}
+\newcommand{\block}[2][t]{\begin{array}[#1]{@{}>{\blockstyle}l@{}}#2\end{array}}
+
+% constructors
+\newcommand{\clparen}{\texttt{(}}
+\newcommand{\crparen}{\texttt{)}}
+\newcommand{\clbracket}{\texttt[}
+\newcommand{\crbracket}{\texttt{]}}
+\newcommand{\ccomma}{\kwdstyle{,}}
+
+\newcommand{\lbl}{{\color{red}\exprstyle{l}}}
+\newcommand{\unit}{\constrstyle{\clparen}\constrstyle{\crparen}}
+\newcommand{\pr}[2]{\constrstyle{\clparen}#1\constrstyle{\ccomma}#2\constrstyle{\crparen}}
+% meta vars
+\newcommand{\Var}{\mathsf{Var}}
+\newcommand{\val}{\exprstyle{v}}
+\newcommand{\valtwo}{\exprstyle{w}}
+\newcommand{\expr}{\exprstyle{s}}
+\newcommand{\exprtwo}{\exprstyle{t}}
+\newcommand{\exprfun}{\exprstyle{f}}
+\newcommand{\exprfuntwo}{\exprstyle{g}}
+\newcommand{\exprthree}{\exprstyle{u}}
+\newcommand{\var}[1]{#1}
+\newcommand{\vw}{\var{w}}
+\newcommand{\va}{\var{a}}
+\newcommand{\vb}{\var{b}}
+\newcommand{\vc}{\var{c}}
+\newcommand{\vk}{\var{k}}
+\newcommand{\vx}{\var{x}}
+\newcommand{\vy}{\var{y}}
+\newcommand{\vxs}{\var{xs}}
+\newcommand{\vys}{\var{ys}}
+\newcommand{\vz}{\var{z}}
+\newcommand{\vf}{\var{f}}
+\newcommand{\vn}{\var{n}}
+\newcommand{\vm}{\var{m}}
+\newcommand{\vg}{\var{g}}
+\newcommand{\op}[1][op]{\opstyle{#1}}
+\newcommand{\infop}[1][op]{\mathrel{\opstyle{#1}}}
+% expressions
+\newcommand{\app}{\,}
+\newcommand{\const}[1][c]{\opstyle{#1}}
+\newcommand{\consttwo}{\const[d]}
+\NewDocumentCommand{\letin}{s s m m m}{%
+  \block{%
+    \kwd{let}\espace#3 =
+    \IfBooleanT{#2}{\\\eindent}
+    \block{#4}
+    \IfBooleanTF{#1}{\\}{\espace}%
+    \kwd{in}\espace#5%
+  }%
+}
+\NewDocumentCommand{\mletin}{s m m m}{%
+  \block{%
+    #2 \SAMPLE \block{#3;}\IfBooleanTF{#1}{\\}{\espace}#4
+    % \kwd{bind}\espace#2 = #3 \espace \kwd{in}%
+    % \IfBooleanTF{#1}{\\}{\espace}%
+    % #4%
+  }%
+}
+\newcommand{\mbind}[2]{\kwd{bind}\ #1\ #2}
+
+\NewDocumentCommand{\mletrec}{s m m m}{%
+  \block{%
+    \kwd{mletrec}\espace #2 \espace #3 = \IfBooleanTF{#1}{\\\eindent}{}\block{#4}
+  }%
+}
+% \newcommand{\inj}[2]{\constrstyle{in_{#1}}\app#2}
+% \newcommand{\prj}[2]{%
+%   \ifnum#1=1
+%     \mathtt{fst}\app#2%
+%   \else
+%     \mathtt{snd}\app#2%
+%   \fi
+% }
+\newcommand{\inj}[2]{\constrstyle{\iota_{#1}}\app#2}
+\newcommand{\prj}[2]{\mathbf{\pi}_#1 \app #2}
+
+\newcommand{\caseof}[1]{\kwd{case}\espace#1\espace\kwd{of}\ }
+\newcommand{\casesep}{\espace{\mid}\espace}
+\ExplSyntaxOn
+\NewDocumentCommand{\case}{s m m}{
+  \seq_set_split:Nnn \l_tmpa_seq { ; } { #3 }
+  \block{
+    \caseof{#2}
+    \IfBooleanTF{#1}{% 
+      \\
+      \block{
+        \phantom{{}\casesep}
+        \seq_use:Nn \l_tmpa_seq { \\\casesep }
+      }%
+    }{% 
+      \seq_use:Nn \l_tmpa_seq { \casesep }%
+    }%
+  }
+}
+\ExplSyntaxOff
+
+\NewDocumentCommand{\ite}{s m m m}{%
+  \kwd{if}\espace#2
+  \IfBooleanTF{#1}{
+    \\\kwd{then}\espace\block{#3}
+    \\\kwd{else}\espace\block{#4}
+  }{
+    \espace\kwd{then}\espace\block{#3}\espace\kwd{else}\espace\block{#4}
+  }
+}
+\newcommand{\roll}{\kwd{roll}\ }
+\newcommand{\unroll}{\kwd{unroll}\ }
+\newcommand{\fold}[1]{\kwd{fold}\ #1}
+\newcommand{\foldr}{\op[foldr]}
+\newcommand{\tick}[2][]{\ixstyle{#1\checkmark[}#2\ixstyle{]}}
+% \newcommand{\lam}[2]{\kwd{\ensuremath{\lambda}} #1.\,#2}
+\ExplSyntaxOn
+\NewDocumentCommand{\lam}{s O{\lambda}mm}{%
+  \kwd{\ensuremath{#2}}%
+  \seq_set_split:Nnn \l_tmpa_seq { , } { #3 }%
+  \block{%
+    \seq_use:Nn \l_tmpa_seq { \, }%
+    .\IfBooleanTF{#1}{\\\espace}{\,}{\block{#4}}%
+  }
+}
+\ExplSyntaxOff
+\newcommand{\fix}[3]{\kwd{fix}\espace#1\espace#2.\espace#3}
+\newcommand{\cif}[3]{\kwd{if}\espace#1\espace\kwd{then}\espace#2\espace\kwd{else}\espace#3}
+\newcommand{\mif}[3]{#2 \mathrel{\opstyle{\oplus}_{#1}} #3}
+\newcommand{\ret}[1]{\kwd{return}\espace#1}
+\newcommand{\mfail}{\kwd{fail}}
+\newcommand{\paren}[1]{\left(#1\right)}
+\newcommand{\tuple}[1]{\left<#1\right>}
+\newcommand{\set}[1]{\{#1\}}
+% \newcommand{\seq}[1]{(\vv{#1})}
+\newcommand{\titem}[2][\lbl]{{#1:#2}}
+\newcommand{\proj}[2]{#1.#2}
+\newcommand{\ins}[2]{#1\ #2}
+\newcommand{\constr}[1][c]{\constrstyle{#1}}
+\newcommand{\cint}[1]{\constr[#1]}
+\newcommand{\ctrue}{\constr[true]}
+\newcommand{\cfalse}{\constr[false]}
+\newcommand{\clist}[1]{\constr[{[#1]}]}
+\newcommand{\cnil}{\clist{\,}}
+\newcommand{\ccons}{{\constr[\,\mathtt{::}\,]}}
+\newcommand{\czero}{\constr[0]}
+\newcommand{\csucc}{\constr[succ]}
+
+
+% types
+% --------------------------------------------------------------------
+
+\newcommand{\tydecl}[1][]{\mathrel{\exprstyle{\mathrel{{:}{:}}}_{#1}}}
+\newcommand{\ofty}{\,\mathtt{:}\,}
+\newcommand{\emptysig}{\cdot}
+\newcommand{\emptyctx}{\cdot}
+\newcommand{\indfun}{{\tilde F}}
+
+% pDijkstra (moved here from pdijkstra.tex)
+\newcommand{\wpty}[2]{\tydist_{#2} \app #1}
+% \newcommand{\wpty}[2]{\tydist \app #1 \app #2}
+\newcommand{\ix}{w}
+\newcommand{\purety}{\hat{\ty}}
+\newcommand{\puretytwo}{\hat{\tytwo}}
+\newcommand{\purectx}[1]{\hat{#1}}
+\newcommand{\dty}{A}
+\newcommand{\dtytwo}{B}
+\newcommand{\dtyctx}{\Delta}
+\newcommand{\rty}{\tyconstr[R]^{+\infty}}
+\newcommand{\FSpec}[1]{\tyconstr[W] \app #1}
+\newcommand{\leqw}[1]{\leq_{\FSpec{#1}}}
+\newcommand{\coerce}[1]{#1^\flat}
+\newcommand{\skel}[1]{#1^{\flat}}
+\newcommand{\subtypeof}{\mathrel{\exprstyle{{<}{:}}}}
+\newcommand{\wf}{\mathsf{\ wf}}
+\newcommand{\vars}{\mathsf{vars}}
+\newcommand{\purejudge}{\judge[p]}
+\newcommand{\pdijkstra}{$\mathsf{pDijkstra}$\xspace}
+
+% base types
+\newcommand{\tystyle}[1]{\mathtt{#1}}
+% \newcommand{\tycost}{\ixstyle{\tystyle{C}}}
+\newcommand{\tybase}[1][B]{\tystyle{#1}}
+\newcommand{\tyunit}{\tystyle{1}}
+\newcommand{\tymu}[2]{\mu #1. #2}
+\newcommand{\tysum}{\color{red}\Sigma}
+\newcommand{\typrod}{\color{red}\Pi}
+
+\newcommand{\tyint}{\tybase[Int]}
+\newcommand{\tyq}{\tybase[Rational]}
+\newcommand{\tyr}{\tybase[Real]}
+\newcommand{\tynat}{\tybase[Nat]}
+% \newcommand{\tyRext}{\tybase[R^{+\infty}]}
+% \newcommand{\tyRext}{\tystyle{R^{+\infty}}}
+% \newcommand{\tyRext}{\tystyle{[0,\infty]}}
+\newcommand{\tyRext}{\rty}  % matches pdijkstra's \rty
+\newcommand{\typrob}{\tystyle{(0,1)}}
+\newcommand{\tylist}[1]{\tybase[List]\app#1}
+\newcommand{\tybool}{\tybase[Bool]}
+\newcommand{\tyconstr}[1][T]{\tystyle{#1}}
+\newcommand{\tydist}{\tyconstr[D]}
+
+% regular types
+\newcommand{\tyVar}{\mathsf{TV}}
+\newcommand{\tyvar}{\alpha}
+\newcommand{\tyvartwo}{\beta}
+\newcommand{\polyty}{\gamma}
+\newcommand{\polytytwo}{\sigma}
+\newcommand{\polytythree}{\rho}
+\newcommand{\ty}{\tau}
+\newcommand{\tytwo}{\upsilon}
+\newcommand{\tythree}{\rho}
+\newcommand{\tyctx}{\Gamma}
+\newcommand{\Sum}{\Sigma}
+\newcommand{\Prod}{\Pi}
+% \NewDocumentCommand{\Sum}{E{_^}{{}{}}}{\mathop{\Sigma}_{#1}^{#2}}
+% % \newcommand{\Sum}{\mathop{\Upsigma}}
+% \NewDocumentCommand{\Prod}{E{_^}{{}{}}}{\Pi_{#1}^{#2}}
+
+
+\newcommand{\tysig}{\Sigma}
+\newcommand{\predsig}{{\color{red}\Theta}}
+
+\renewcommand{\Form}{\Phi}
+\newcommand{\Formtwo}{\Psi}
+\newcommand{\form}{\phi}
+\newcommand{\formtwo}{\psi}
+\newcommand{\formthree}{\chi}
+
+
+\newcommand\judge[1][]{\vdash_{#1}}
+\newcommand\judgf[1][]{\vdash_{#1}}
+\newcommand{\deff}[3]{\mathsf{Def}(#1, #2, #3)}
+
+
+% semantics
+% --------------------------------------------------------------------
+\newcommand{\opsem}[1]{\opstyle{\underline{#1}}}
+\newcommand{\Set}{\mathbf{Set}}
+\newcommand{\Cpo}{\mathbf{CPO}}
+
+% operational semantics
+% --------------------------------------------------------------------
+\newcommand{\nf}{\mathsf{nfd}}
+\newcommand{\ec}{\mathsf{ec}}
+
+\newcommand{\ectx}{\exprstyle{E}}
+\newcommand*{\hole}{\Box}
+\newcommand{\exprd}{\exprstyle{d}}
+\newcommand{\exprdtwo}{\exprstyle{e}}
+
+% \NewDocumentCommand{\step}{O{} O{}}{\mathrel{\to_{#1}^{#2}}}
+% \newcommand{\bstep}{\step[\beta]}
+% \newcommand{\estep}{\step[\eta]}
+% \newcommand{\istep}{\step[\iota]}
+% \newcommand{\mstep}{\step[\mu]}
+% \newcommand{\pstep}{\step[\pi]}
+% \newcommand{\xstep}{\step[\xi]}
+
+% denotational semantics
+% --------------------------------------------------------------------
+\newcommand{\sem}[1]{\llbracket #1 \rrbracket}
+\newcommand{\Sem}[1]{\left\llbracket \block[c]{#1} \right\rrbracket}
+\newcommand{\tyenv}{\xi}
+\newcommand{\envupdate}[1]{[#1]}
+\newcommand{\upd}[2]{#1 \mathrel{:=} #2}
+\newcommand{\envup}[2]{\envupdate{\upd{#1}{#2}}}
+\newcommand{\envupt}[4]{\envupdate{\upd{#1}{#2},\upd{#3}{#4}}}
+
+\newcommand{\tybasesem}[1]{\underline{#1}}
+\newcommand{\constsem}[1]{\constrstyle{\underline{#1}}}
+
+\newcommand{\sinj}[1]{\iota_{#1}}
+\newcommand{\scase}{\mathbf{case}}
+\newcommand{\sprj}[2]{\pi_{#1}\app #2}
+% \newcommand{\sprc}[2]{\constrstyle{#1} : #2}
+\newcommand{\env}{\eta}
+\newcommand{\ExpMon}{\mathsf{E}}
+\newcommand{\Exp}[1]{\ExpMon#1}
+\newcommand{\crel}{\bowtie}
+\newcommand{\scf}[2]{\left[#1 \longrightarrow #2\right]}
+\newcommand{\sunit}{\mathbf{\bullet}}
+\newcommand{\sinl}{\mathbf{inl}}
+\newcommand{\sinr}{\mathbf{inr}}
+\newcommand{\sfold}{\mathbf{para}}
+\newcommand{\sid}{\mathbf{id}}
+\newcommand{\sroll}{\mathbf{roll}}
+\newcommand{\sunroll}{\mathbf{unroll}}
+\newcommand{\slam}[2]{\boldsymbol{\lambda} #1.\,#2}
+\newcommand{\sret}{\mathbf{unit}}
+\newcommand{\sfail}{\mathbf{fail}}
+\newcommand{\lfp}{\mathbf{lfp}}
+\newcommand{\dirac}[1]{\delta({#1})}
+\NewDocumentCommand{\sbind}{s O{} m m}{\block{\mathbf{bind}_{#2}\,#3\IfBooleanTF{#1}{\\\espace}{\,}\block{#4}}}
+\NewDocumentCommand{\sfmap}{m m}{\mathbf{fmap}\,#1\,#2}
+\NewDocumentCommand{\sletin}{s m m m}{%
+  \block{%
+    \mathbf{let}\espace#2 = #3 \IfBooleanTF{#1}{\\}{\espace}%
+    \mathbf{in}\espace#4%
+  }%
+}
+
+% HOL
+% ----------------------------------------------------------------------
+
+\newcommand\judgeHOL{\vdash_{\mathsf{HOL}}}
+\newcommand\prop{\tyconstr[Prop]}
+
+\newcommand{\lop}[1]{\text{\textsf{#1}}}
+\newcommand{\uclosed}[1]{\lop{u-closed}\app#1}
+\newcommand{\tclosed}[1]{\lop{t-closed}\app#1}
+\newcommand{\uclosedr}[1]{\lop{u-closed2}\app#1}
+\newcommand{\tclosedr}[1]{\lop{t-closed2}\app#1}
+\newcommand{\dclosed}[1]{\lop{d-closed}\app#1}
+\newcommand{\asterm}[1]{\lop{ast}\app#1}
+% utils
+% ----------------------------------------------------------------------
+
+\newcommand{\TOP}{\rule{0pt}{3ex}} % TOP SPACE IN TABLE
+\newcommand*{\BOT}{\rule[-1.8ex]{0pt}{0pt}} % BOTTOM SPACE IN TABLE
+\newcommand{\backskip}{\vspace{-\baselineskip}}
+\newcommandx{\mparbox}[3][1=l]{\text{\makebox[#2][#1]{\ensuremath{#3}}}}
+\makeatletter
+\newcommand{\pushright}[1]{\ifmeasuring@#1\else\omit\hfill$\displaystyle#1$\fi\ignorespaces}
+\newcommand{\pushleft}[1]{\ifmeasuring@#1\else\omit$\displaystyle#1$\hfill\fi\ignorespaces}
+\makeatother
+
+% repeating theorems
+% --------------------------------------------------------------------
+
+\RequirePackage{thm-restate}
+
+\newcommand{\repeatable}[1]{
+  \newenvironment{#1*}[2][]
+  {\expandafter\restatable[##1]{#1}{##2}\label{##2}}
+  {\endrestatable}
+}
+
+\repeatable{proposition}
+\repeatable{lemma}
+\repeatable{theorem}
+
+\newcommand{\again}[1]{\csname#1\endcsname*}
+
+% logics
+% --------------------------------------------------------------------
+\newcommand{\logic}{\textsf{hPHOL}\xspace}
+\newcommand{\tlogic}{\textsf{UPHOL}\xspace}
+\newcommand{\rlogic}{\textsf{RPHOL}\xspace}
+\newcommand{\PRHL}{\textsf{pRHL}\xspace}
+\newcommand{\APRHL}{\textsf{apRHL}\xspace}
+\newcommand{\EPRHL}{$\mathbb E$\textsf{pRHL}\xspace}
+\newcommand{\ERHL}{\textsf{eRHL}\xspace}
+\newcommand{\EHOARE}{\textsf{eHL}\xspace}
+\newcommand{\PDIJKSTRA}{\pdijkstra}
+\newcommand{\fone}{\phi}
+\newcommand{\ftwo}{\psi}
+\newcommand{\fthree}{\xi}
+\newcommand{\pred}{P}
+\newcommand{\imp}{\Rightarrow}
+\newcommand{\liff}{\Leftrightarrow}
+\newcommand{\qnt}[4]{#1\, #2\unlessempty{#3}{\,{:}\,#3}.\, #4}
+\NewDocumentCommand{\fa}{s}{\IfBooleanTF{#1}{\lam*}{\lam}[\forall]}
+\NewDocumentCommand{\exq}{s}{\IfBooleanTF{#1}{\lam*}{\lam}[\exists]}
+% \newcommand{\exq}[3]{\qnt \exists{#1}{#2}{#3}}
+
+\newcommand{\eqred}{\mathrel{=_\beta}}
+\newcommand{\subt}{\mathrel{\triangleleft}}
+
+\newcommand{\derivable}[1][]{\vdash_{#1}}
+\newcommand{\evalid}{\vDash_{\EHOARE}}
+\newcommand{\ejudge}{\vdash_{\EHOARE}}
+
+\newcommand{\pvalid}{\vDash_{\PRHL}}
+\newcommand{\pjudge}{\vdash_{\PRHL}}
+
+\newcommand{\fctx}{\Phi}
+
+\newcommand{\polyctx}{\mathsf{C}}
+\newcommand{\muctx}{\mathsf{C_\mu}}
+
+\newcommand{\defiff}{\mathrel : \Leftrightarrow}
+\newcommand{\fsem}[1][\tyctx]{\vDash_{#1}}
+
+\NewDocumentCommand{\Judgl}{O{\tyctx} O{\fctx} m}{#1\mid #2 \vDash #3}
+\NewDocumentCommand{\judgl}{O{\tyctx} O{\fctx} m}{#1\mid #2 \vdash #3}
+
+\NewDocumentCommand{\Judgtl}{O{\tyctx} O{\fctx} m m m}{#1\mid #2 \vDash #3 : #4\mid #5}
+\NewDocumentCommand{\judgtl}{O{\tyctx} O{\fctx} m m m}{#1\mid #2 \vdash #3 : #4\mid #5}
+
+\NewDocumentCommand{\Judgbl}{O{\tyctx} O{\fctx} m m m m}{#1\mid #2 \vDash #3 : #4\mid \{#5\}_{#6}}
+\NewDocumentCommand{\judgbl}{O{\tyctx} O{\fctx} m m m m}{#1\mid #2 \vdash #3 : #4\mid \{#5\}_{#6}}
+
+\NewDocumentCommand{\Judgbla}{O{\tyctx} O{\fctx} m m m m m}{#1\mid #2 \vDash #3 : #4\mid #5 \imp \{#6\}_{#7}}
+\NewDocumentCommand{\judgbla}{O{\tyctx} O{\fctx} m m m m m}{#1\mid #2 \vdash #3 : #4\mid #5 \imp \{#6\}_{#7}}
+
+\newcommand{\err}{\varepsilon}
+
+\newcommand*{\unlessempty}[2]{\ifthenelse{\equal{#1}{}}{}{#2}}
+\newcommand{\ext}[2][]{{#2}^{\dag\unlessempty{#1}{(#1)}}}
+\newcommand{\nth}[2]{{#2}^{\langle #1 \rangle}}
+\newcommand{\cert}[2][]{\Box^{#1}\, #2}
+
+\newcommand{\D}[2]{\mathbf{D}_{#2}\left[#1\right]}
+
+% UBL
+% ---------------------------------------------------------------------
+\newcommand{\ublemb}[3][]{#2 \Rrightarrow_{#1} #3}
+
+
+
+% ERHL
+% ---------------------------------------------------------------------
+
+\newcommand{\ke}[1]{#1^{\#}}
+% \newcommand{\ke}[1]{\mathcal{K}(#1)}
+
+% PRHL
+% ---------------------------------------------------------------------
+% \newcommand{\invcond}[1]{\overline{#1}}
+\newcommand{\invcond}[1]{\neg#1}
+\newcommand{\cond}{\mathcal{R}}
+\newcommand{\condtwo}{\mathcal{S}}
+\newcommand{\condthree}{\mathcal{T}}
+
+\newcommand{\COUPLE}{\sim}
+
+\newcommand{\RHT}[6][]{%
+  \def\spc{\ifthenelse{\equal{#1}{}}{\ }{\\}}%
+  \def\triple{\ifthenelse{\equal{#2}{}}{}{{#2}:\spc}\{#3\}\spc#4\COUPLE#5\spc\{#6\}}
+  \ifthenelse{\equal{#1}{}}{\triple}{\begin{lalign}[#1]\triple\end{lalign}}
+}
+\newcommand{\aRHT}[6][]{%
+  \def\spc{\ifthenelse{\equal{#1}{}}{\ }{\\}}%
+  \def\triple{\{#3\}\spc#4\COUPLE_{(#2)}#5\spc\{#6\}}
+  \ifthenelse{\equal{#1}{}}{\triple}{\begin{lalign}[#1]\triple\end{lalign}}
+}
+
+\newcommand{\sexpr}{d_1}
+\newcommand{\sexprtwo}{d_2}
+\newcommand{\bexpr}{b_1}
+\newcommand{\bexprtwo}{b_2}
+
+\newcommand{\mapped}{\mapsto}
+\newcommand{\valid}{\models}
+
+\newcommand{\onside}[2]{#2^{\langle#1\rangle}}
+\newcommand{\lft}{\onside{1}}
+\newcommand{\rght}{\onside{2}}
+
+% eHoare
+% ---------------------------------------------------------------------
+
+\newcommand{\HT}[5][]{%
+  \def\spc{\ifthenelse{\equal{#1}{}}{\ }{\\}}%
+  \def\triple{\ifthenelse{\equal{#2}{}}{}{{#2}:\spc}\{\,#3\,\}\spc#4\spc\{\,#5\,\}}
+  \ifthenelse{\equal{#1}{}}{\triple}{\begin{lalign}[#1]\triple\end{lalign}}
+}
+
+\newcommand{\ex}{f}
+\newcommand{\extwo}{g}
+\newcommand{\exthree}{h}
+
+\newcommand{\gd}{\mid}
+\newcommand{\ggd}{\mathrel{\Vert} }
+
+\newcommand{\eemb}[4][]{#2 \unlessempty{#1}{, #1} : #3 \succeq #4 }
+
+% numbers, probabilities
+% --------------------------------------------------------------------
+\newcommand{\lub}{\bigsqcup}
+\newcommand{\Land}{{\textstyle\bigwedge}}
+\newcommand{\N}{\mathbb{N}}
+\newcommand{\ZZ}{\mathbb{Z}}
+\newcommand{\BB}{\mathbb{B}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\tyZ}{\ty}
+\newcommand{\Rext}{[0,\infty]}
+% \newcommand{\Rext}{\R^{+\infty}}
+\newcommand{\Rpos}{\R^{+}}
+\newcommand{\Rzeroone}{\R_{[0,1]}}
+\newcommand{\dom}{\mathsf{dom}}
+\newcommand{\FV}{\mathsf{FV}}
+\newcommand{\supp}{\mathsf{supp}}
+\newcommand{\omegaCPO}{\omega\mathbf{CPO}}
+\newcommand{\Dist}{\mathsf{Dist}}
+\newcommand{\dist}{\mu}
+\newcommand{\disttwo}{\nu}
+\newcommand{\distthree}{\rho}
+\newcommand{\restrict}[2]{#1{\downharpoonright_{#2}}}
+\renewcommand{\P}[2]{\mathbb{P}_{#2}\left[#1\right]}
+\newcommand{\cf}[1]{\mathbf{1}_{#1}}
+
+\newcommand{\coupled}[3]{#1 \mathrel{\triangleright} #2 \mathrel{\&} #3}
+\newcommand{\embcoupled}[3]{{#1 \mathrel{\triangleright_{\logic}} #2 \mathrel{\&} #3}}
+
+\newcommand{\wit}[2][]{{#2}^{\dag #1}}
+
+\newcommand{\E}[3][]{\mathbb{E}_{\scriptsize\ifthenelse{\equal{#1}{}}{{#2}}{#1 \leftarrow #2}}[#3]}
+\newcommand{\Prob}[3][]{\mathbb{P}_{\scriptsize\ifthenelse{\equal{#1}{}}{{#2}}{#1 \leftarrow #2}}[#3]}
+
+
+% HHOL
+% --------------------------------------------------------------------
+\makeatletter
+\newcommand*\bigcdot{\mathpalette\bigcdot@{.5}}
+\newcommand*\bigcdot@[2]{\mathbin{\vcenter{\hbox{\scalebox{#2}{$\m@th#1\bullet$}}}}}
+\makeatother
+
+\newcommand{\asrtabs}[2]{#1 \bigcdot #2}
+\NewDocumentCommand{\asrt}{o m}{%
+  \;\{\IfValueTF{#1}{\asrtabs{#1}{#2}}{#2}\}%
+}
+\newcommand{\insync}{\mathtt{sync}}
+
+% \newcommand{\ASRT}[1]{\left\{\block[c]{#1}\right\}}
+
+\NewDocumentCommand{\ASRT}{o m}{%
+  \left\{ \IfValueTF{#1}{\block[c]{\asrtabs{#1}{\block{#2}}}}{\block[c]{#2}} \right\}
+}
+
+\DeclarePairedDelimiter{\SEQ}{(}{)}
+\DeclarePairedDelimiter{\HMAP}{[}{]}
+\NewDocumentCommand{\seq}{O{i} O{I} m}{\SEQ{#3}_{#1 \in #2}}
+\NewDocumentCommand{\hseq}{O{i} O{I} m}{\SEQ{#3}_{#1\unlessempty{#2}{ \in #2}}}
+\newcommand{\Ix}[1]{\text{\small{\ensuremath{#1{:}}}}\ }
+\NewDocumentCommand{\hmap}{O{i} O{I} m}{\HMAP{\Ix{#1} #3}_{#2}}
+% \NewDocumentCommand{\hterm}{O{i} O{I} m}{\HTERM{#1.\ #3}_{#2}}
+\NewDocumentCommand{\hvec}{m}{\overline{#1}}
+\newcommand{\hconc}{{,}}
+% \NewDocumentCommand{\hvec}{m}{\mathbf{#1}}
+
+% PHOL
+% --------------------------------------------------------------------
+
+\newcommand{\tvar}{r}
+\newcommand{\svar}{t}
+
+
+\newcommand{\rel}{\sim}
+
+% relational lifting
+% --------------------------------------------------------------------
+\newcommand{\HOARE}{\ensuremath{\textsf{HOARe}^2}\xspace}
+% relational (left / right) projections of a relational variable
+\newcommand{\dl}[1]{{#1}_{\triangleleft}}
+\newcommand{\dr}[1]{{#1}_{\triangleright}}
+% refinement typing connectives
+\newcommand{\rdec}{\mathbin{:}}
+\newcommand{\refty}[3]{\{\, #1 \rdec #2 \mid #3 \,\}}
+\newcommand{\dprodty}[3]{(#1 \rdec #2) \to #3}
+\newcommand{\dpairty}[3]{(#1 \rdec #2) \times #3}
+\newcommand{\Mon}[3]{\tydist_{#1,#2} \app #3}
+% short annotation marking the \HOARE-specific judgments and interpretation
+\newcommand{\HANN}{\mathsf{H}}
+% type erasure and relational interpretation of refinement types;
+% \rint reuses the shared denotation brackets \sem, tagged with \HANN.
+\newcommand{\erase}[1]{\skel{#1}}
+\newcommand{\rint}[1]{\llparenthesis\, #1 \,\rrparenthesis}
+% \newcommand{\rint}[1]{\lvert #1 \rvert}
+% (epsilon,delta)-lifting (Sato)
+\newcommand{\dplift}[2]{\mathcal{L}_{#1}^{#2}}
+\newcommand{\rimg}[2]{#1\langle #2 \rangle}
+% refinement typing judgments, built on the shared turnstiles
+% \judge (\vdash) and \fsem (\vDash) and the formula context \fctx.
+\newcommand{\renv}{\Theta}
+\newcommand{\hjudge}{\judge}
+\newcommand{\hvalid}{\fsem}
+\newcommand{\htj}[4]{#1 \hjudge #2 \rel #3 \rdec #4}
+\newcommand{\htjd}[3]{#1 \hjudge #2 \rdec #3}
+\newcommand{\rsubst}[2]{\substt{\dl{#1}}{\dl{#2}}{\dr{#1}}{\dr{#2}}}
+% \cmd/\cmdtwo are normally provided by the pRHL embedding (currently
+% unloaded); guard them so this section also typesets standalone.
+\providecommand{\cmd}{C}
+\providecommand{\cmdtwo}{D}
+\newcommand{\hsub}[3]{#1 \hjudge #2 \mathrel{\le} #3}
+\newcommand{\dpenv}{\fctx}
+% iteration combinator (already defined in rhol.tex; guard)
+\providecommand{\iter}{\op[iter]}
+\newcommand{\iterM}{\op[iterM]}
+% bare projection symbol pi_i, matching the symbol of the shared \prj
+% (which is the applied form \prj{i}{x} = pi_i x)
+\providecommand{\PRJ}[1]{\mathbf{\pi}_#1}
+% same branch stated in HOL over the constructors
+\newcommand{\samebr}[2]{(\exists\, t.\; #1 = \inj1{t}) \iff (\exists\, u.\; #2 = \inj1{u})}
+
+% Rule-tag mark for \HOARE rules: every rule name in that section is prefixed
+% with \hpre so it reads distinctly from the \logic rule it is discharged by.
+% The actual activation/restore lives at the top/bottom of hoare2.tex so the
+% prefix is confined to that section; change \hpre to change the mark.
+\newcommand{\hpre}{H}
+
+
+% math utils
+% --------------------------------------------------------------------
+\newcommand*{\defsym}{\triangleq}
+\newenvironment{lalign}[1][]{\begin{array}[#1]{@{}>{{}}l@{}}}{\end{array}}
+\newcommand{\fv}{\mathsf{FV}}
+\newcommand{\expl}[1]{\quad\text{\emph{(#1)}}}
+
+
+% pWhile
+% --------------------------------------------------------------------
+\newcommand{\pwhile}{\textsf{pWhile}\xspace}
+
+\makeatletter
+\def\ws{}
+\long\def\@chang#1{\\{\INDENT}\begin{codeseq}#1\end{codeseq}\\}
+\newcommand{\chang}[1]{#1\ \@ifnextchar\bgroup{\def\ws{}\@chang}{\def\ws{\ \def\ws{}}}}
+\makeatother
+
+\newcommand{\ASGN}{\mathrel{\leftarrow}}
+\newcommand{\SAMPLE}{\mathrel{\vbox{\offinterlineskip\ialign{\hfil##\hfil\cr{\tiny${\text{\texttt{\$}}}$}\cr\noalign{\kern0ex}${\leftarrow}$\cr}}}}
+\newcommand{\SKIP}{\kwd{skip}}
+% \newcommand{\SKIP}{\kwd{skip}}
+\newcommand{\ABORT}{\kwd{abort}}
+\newcommand{\RET}[1]{\kwd{return}\ #1}
+%
+\NewDocumentCommand\CALL{m D{(}{)}{\,}}{{\color{codefn}{\op{#1}}}\PAR{#2}}
+\NewDocumentCommand\CONSTR{m D{(}{)}{\,}}{{\color{codeconstr}{\constr{#1}}}\PAR{#2}}
+\NewDocumentCommand\PROC{m D{(}{)}{\,}}{\chang{\kwd{proc}\ {\color{codefn}\op{#1}}\PAR{#2}}}
+\newcommand{\END}{\ws\kwd{\color{red}{end}}}
+%
+\NewDocumentCommand\WHILE{d<>}{\chang{\kwd{while}}}
+\newcommand{\FOR}[3]{\kwd{for}\ #1 = #2\ \kwd{to}\ #3}
+\newcommand{\DO}{\ \chang{\kwd{do}}}
+\newcommand{\OD}{\ws\kwd{\color{red}{od}}}
+%
+\newcommand{\IF}{\protect\chang{\kwd{if}}}
+\newcommand{\THEN}{\ws\protect\chang{\kwd{then}}}
+\newcommand{\ELSE}{\ws\protect\chang{\kwd{else}}}
+\newcommand{\ELSEIF}{\ws\protect\chang{\kwd{elseif}}}
+\newcommand{\FI}{\ws\kwd{fi}}
+\newcommand{\ITE}[3]{\IF#1\THEN#2\ELSE#3}
+
+\newcommand{\wmem}{\mathtt{m}}
+\newcommand{\wMem}{\mathtt{Mem}}
+\newcommand{\wBool}{\mathtt{Bool}}
+\newcommand{\eMem}{\mathit{Mem}}
+\newcommand{\eBool}{\mathit{Bool}}
+\newcommand{\emem}{\mathit{m}}
+\newcommand{\mupd}[2]{[#1 := #2]}
+
+%%% Modalities
+
+\newcommand{\cm}[2][]{\mathbf C^{#1}_{#2}\,}
+\newcommand{\dm}[1]{\mathbf C^{\mathsf{Lilac}}_{#1}\,}
+\newcommand{\bm}[2][]{\mathbf B^{#1}_{#2}\,}
+% \newcommand{\sepc}[3]{\mathrel{{}^{#1} \stackrel{#2}* {}^{#3}} }
+\newcommand{\sepc}[3]{%
+  \mathrel{%
+    {\raisebox{-.75ex}{$\scriptstyle #1$}}%
+    \!{\stackrel{\mathclap{#2}}{*}}%
+    {\raisebox{-.75ex}{$\scriptstyle #3$}}%
+  }%
+}
+\newcommand{\rv}{X}
+\newcommand{\rvtwo}{Y}
+\newcommand{\rvthree}{Z}
+
+
+\newcommand{\metric}{k}
+\newcommand{\metrictwo}{\ell}
+
+
+
+% Examples
+% --------------------------------------------------------------------
+
+\newcommand{\bern}{\op[{bern}]}
+\newcommand{\vns}{\var{coin}}
+\newcommand{\bdy}{\exprstyle{bdy}}
+\newcommand{\indhyp}{\exprstyle{IH}}
+
+\newcommand{\lreg}{\op[lreg]}
+
+\newcommand{\tycoup}{\tystyle{Coupon}}
+
+\newcommand{\collect}{\op[collect]}
+\newcommand{\coup}{\op[coup]}
+\newcommand{\unif}{\op[unif]}
+\newcommand{\osubseteq}{\mathrel{\op[\subseteq]}}
+\newcommand{\coupons}{\exprstyle{C}}
+\newcommand{\ds}{\var{D}}
+\newcommand{\plus}{\mathrel{\op[+]}}
+\newcommand{\cost}{\exprstyle{cost}}
+
+
+\newcommand{\asimp}{\op[as]}
+\newcommand{\asspec}{\op[spec]}
+
+
+\newcommand{\step}{\op[step]}
+\newcommand{\take}{\op[take]}
+\newcommand{\rsvr}{\op[reservoir]}
+\newcommand{\rand}{\op[rand]}
+\newcommand{\uniq}{\mathit{U}}
+\newcommand{\predp}{P}
+\newcommand{\predq}{Q}
+\newcommand{\predt}{T}
+
+
+% Motivating
+%---------------------------------------------------------------------
+
+\newcommand{\EE}{\mathbb{E}}
+\newcommand{\VV}{\mathrm{Var}}
+\newcommand{\Cov}{\mathrm{Cov}}
+\newcommand{\sgd}{\textsf{SGD}\xspace}
+\newcommand{\rhol}{\textsf{RHOL}\xspace}
+\newcommand{\fedsgd}{\textsf{FedSGD}\xspace}
+\newcommand{\fedavg}{\textsf{FedAvg}\xspace}
+
+
+
+% environments / document structure
+% --------------------------------------------------------------------
+\makeatletter
+\newcommand*{\envskipline}{\hfill\@beginparpenalty=10000}
+\newenvironment{enumerateenv}{\hfill\bgroup\@beginparpenalty=10000\begin{enumerate}}{\end{enumerate}\egroup}
+\newenvironment{itemizeenv}{\hfill\bgroup\@beginparpenalty=10000\begin{itemize}}{\end{itemize}\egroup}
+\makeatother
+\newenvironment{proofcases}
+{
+\begin{list}{\labelitemi}
+{\setlength{\itemsep}{0pt}
+ \setlength{\topsep}{0pt}
+ \setlength{\parsep}{0pt}
+ \setlength{\partopsep}{0pt}
+ \setlength{\leftmargin}{10pt}
+ \setlength{\rightmargin}{0pt}
+ \setlength{\itemindent}{0pt}
+ \setlength{\labelsep}{5pt}
+ \setlength{\labelwidth}{10pt}
+}}
+{
+ \end{list}
+}
+\newcommand{\proofcase}[1]{\item[-]\textsc{Case} #1.}
+\newenvironment{varitemize}
+{
+\begin{list}{\labelitemi}
+{\setlength{\itemsep}{0pt}
+ \setlength{\topsep}{0pt}
+ \setlength{\parsep}{0pt}
+ \setlength{\partopsep}{0pt}
+ \setlength{\leftmargin}{15pt}
+ \setlength{\rightmargin}{0pt}
+ \setlength{\itemindent}{0pt}
+ \setlength{\labelsep}{5pt}
+ \setlength{\labelwidth}{10pt}
+}}
+{
+ \end{list}
+}
+
+\newcounter{numberone}
+
+\newenvironment{varenumerate}
+{
+\begin{list}{\arabic{numberone}.}
+{
+  \usecounter{numberone}
+  \setlength{\itemsep}{0pt}
+  \setlength{\topsep}{0pt}
+  \setlength{\parsep}{0pt}
+  \setlength{\partopsep}{0pt}
+  \setlength{\leftmargin}{15pt}
+  \setlength{\rightmargin}{0pt}
+  \setlength{\itemindent}{0pt}
+  \setlength{\labelsep}{5pt}
+  \setlength{\labelwidth}{15pt}
+}}
+{
+\end{list}
+}
+
+\newcounter{numbertwo}
+
+\newenvironment{varvarenumerate}
+{
+\begin{list}{(\roman{numbertwo})}
+{
+  \usecounter{numbertwo}
+  \setlength{\itemsep}{0pt}
+  \setlength{\topsep}{0pt}
+  \setlength{\parsep}{0pt}
+  \setlength{\partopsep}{0pt}
+  \setlength{\leftmargin}{15pt}
+  \setlength{\rightmargin}{0pt}
+  \setlength{\itemindent}{0pt}
+  \setlength{\labelsep}{5pt}
+  \setlength{\labelwidth}{15pt}
+}}
+{
+\end{list}
+}
+
+
+% English
+
+\newcommand{\lamt}{$\lambda$-term\xspace}
+\newcommand{\lamts}{$\lambda$-terms\xspace}
+
+\newcommand{\lamc}{$\lambda$-calculus\xspace}
